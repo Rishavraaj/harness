@@ -1,34 +1,18 @@
-// import {
-//   streamText,
-//   UIMessage,
-//   convertToModelMessages,
-//   createUIMessageStreamResponse,
-//   toUIMessageStream,
-// } from "ai";
-// import { openai } from "@ai-sdk/openai";
+import { convertToModelMessages, UIMessage } from "ai";
+import { agent } from "../../ai-harness/harness-agent";
 
-// export async function POST(req: Request) {
-//   const { messages }: { messages: UIMessage[] } = await req.json();
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
 
-//   const result = streamText({
-//     model: openai("gpt-4o"),
-//     messages: await convertToModelMessages(messages),
-//   });
+  const session = await agent.createSession();
 
-//   return createUIMessageStreamResponse({
-//     stream: toUIMessageStream({ stream: result.stream }),
-//   });
-// }
-import { HarnessAgent } from "@ai-sdk/harness/agent";
-import { claudeCode } from "@ai-sdk/harness-claude-code";
-import { createVercelSandbox } from "@ai-sdk/sandbox-vercel";
+  const result = await agent.stream({
+    session,
+    messages: await convertToModelMessages(messages),
+    onEnd: () => {
+      session.destroy();
+    },
+  });
 
-export const agent = new HarnessAgent({
-  harness: claudeCode,
-  sandbox: createVercelSandbox({
-    runtime: "node24",
-    ports: [4000],
-  }),
-  instructions:
-    "You are a careful coding assistant. Prefer small changes and explain tradeoffs.",
-});
+  return result.toUIMessageStreamResponse();
+}

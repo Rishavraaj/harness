@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: [
+    "@ai-sdk/harness",
+    "@ai-sdk/harness-codex",
+    "@ai-sdk/harness-claude-code",
+    "@ai-sdk/sandbox-vercel",
+  ],
 };
 
 export default nextConfig;

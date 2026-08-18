@@ -1,31 +1,26 @@
 import { HarnessAgent } from "@ai-sdk/harness/agent";
-import { claudeCode } from "@ai-sdk/harness-claude-code";
+import { createCodex } from "@ai-sdk/harness-codex";
 import { createVercelSandbox } from "@ai-sdk/sandbox-vercel";
+import { tool } from "ai";
+import { z } from "zod/v4";
 
 export const agent = new HarnessAgent({
-  harness: claudeCode,
+  harness: createCodex({
+    reasoningEffort: "high",
+    codexConfig: {
+      model_verbosity: "low",
+    },
+  }),
+  id: "demo",
   sandbox: createVercelSandbox({
     runtime: "node24",
     ports: [4000],
   }),
-  instructions:
-    "You are a careful coding assistant. Prefer small changes and explain tradeoffs.",
+  tools: {
+    deploy: tool({
+      description: "Deploy a service.",
+      inputSchema: z.object({ env: z.enum(["staging", "production"]) }),
+      execute: async ({ env }) => ({ url: `https://${env}.example.com` }),
+    }),
+  },
 });
-
-const session = await agent.createSession();
-
-let exitCode = 0;
-try {
-  const result = await agent.generate({
-    session,
-    prompt: "Create a short TODO.md for this repository.",
-  });
-
-  console.log(result.text);
-} catch (err) {
-  exitCode = 1;
-  console.error(err);
-} finally {
-  await session.destroy();
-  process.exit(exitCode);
-}
